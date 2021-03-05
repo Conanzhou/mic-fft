@@ -17,11 +17,11 @@ void setup() {
   const i2s_config_t i2s_config = {
       .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX), // Receive, not transfer
       .sample_rate = 16000,                              // 16KHz
-      .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,      // could only get it to work with 32bits
-      .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,      // although the SEL config should be left, it seems to transmit on right
+      .bits_per_sample = I2S_BITS_PER_SAMPLE_24BIT,      // could only get it to work with 32bits
+      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,      // although the SEL config should be left, it seems to transmit on right
       .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-      .dma_buf_count = 4,                       // number of buffers
+      .dma_buf_count = 3,                       // number of buffers
       .dma_buf_len = 8                          // 8 samples per buffer (minimum)
   };
 
@@ -58,6 +58,7 @@ void   loop(){
   // Read a single sample and log it for the Serial Plotter.
   int32_t sample = 0;
   int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&sample, portMAX_DELAY); // no timeout
+  // int bytes_read = i2s_read(I2S_PORT, (char *)&sample, 32,4,portMAX_DELAY);
   if (bytes_read > 0)
   {
     Serial.println(sample);
