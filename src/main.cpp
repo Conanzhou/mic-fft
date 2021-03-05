@@ -5,6 +5,7 @@
 arduinoFFT FFT = arduinoFFT(); /* Create FFT object */
 
 const i2s_port_t I2S_PORT = I2S_NUM_0;
+const int BLOCK_SIZE = 512;
 
 void setup() {
   // put your setup code here, to run once:
@@ -18,11 +19,11 @@ void setup() {
       .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX), // Receive, not transfer
       .sample_rate = 16000,                              // 16KHz
       .bits_per_sample = I2S_BITS_PER_SAMPLE_24BIT,      // could only get it to work with 32bits
-      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,      // although the SEL config should be left, it seems to transmit on right
+      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,       // although the SEL config should be left, it seems to transmit on right
       .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-      .dma_buf_count = 3,                       // number of buffers
-      .dma_buf_len = 8                          // 8 samples per buffer (minimum)
+      .dma_buf_count = 2,                       // number of buffers
+      .dma_buf_len = BLOCK_SIZE                 // samples per buffer
   };
 
   // The pin config as per the setup
@@ -52,15 +53,26 @@ void setup() {
   Serial.println("I2S driver installed.");
 }
 
+int data_read(uint32_t *data_value)
+{
+  size_t num_bytes_read = 0;
+  i2s_read(I2S_PORT, (void *)data_value, BLOCK_SIZE * sizeof(uint32_t), &num_bytes_read, portMAX_DELAY);
+  return num_bytes_read;
+}
+
 void   loop(){
   // put your main code here, to run repeatedly:
 
-  // Read a single sample and log it for the Serial Plotter.
-  int32_t sample = 0;
-  int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&sample, portMAX_DELAY); // no timeout
-  // int bytes_read = i2s_read(I2S_PORT, (char *)&sample, 32,4,portMAX_DELAY);
-  if (bytes_read > 0)
+  // Read multiple samples at once and calculate the sound pressure
+  uint32_t samples[BLOCK_SIZE];
+  int num_read = data_read(samples);
+
+  Serial.print("number read: ");
+  Serial.println(num_read);
+  for (int i = 0; i < BLOCK_SIZE ; i++)
   {
-    Serial.println(sample);
+    samples[i] = (samples[i] & 0x00FFFFFF);
+    Serial.println(samples[i]);
   }
+  delay(10000);
 }
